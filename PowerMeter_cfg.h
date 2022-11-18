@@ -3,53 +3,37 @@
 #define POWERMETER_CFG
 
 
-// Trek
+/****** General configuration ***********************/
+
 #define DEBUG
 //#define BLE_LOGGING
 //#define CALIBRATE
-#define DISABLE_LOGGING  // to the SD
-// Crank length, in meters
-#define CRANK_RADIUS 0.1725
-#define LOAD_OFFSET 255904.f
-#define HX711_MULT  -2466.8989547
-#define GYRO_OFFSET -31
-// Hooked up the wires backwards apparently, force is negated.
-// If it isn't, just set to 1.
-#define HOOKEDUPLOADBACKWARDS -1
-#define DEV_NAME "CiafePwr"
+#define DISABLE_LOGGING
 
-/*
-// Steve Merckx defines
-//#define DEBUG
-//#define BLE_LOGGING
-//#define CALIBRATE
-#define DISABLE_LOGGING  // to the SD
-// Crank length, in meters
-#define CRANK_RADIUS 0.1750
-#define LOAD_OFFSET -32000.f
-#define HX711_MULT  -2719.66716169
-#define GYRO_OFFSET 3
-// Hooked up the wires backwards apparently, force is negated.
-// If it isn't, just set to 1.
-#define HOOKEDUPLOADBACKWARDS -1
-#define DEV_NAME "JrvsPwr"
-*/
 
-// Allie Orbea defines
-/*
-#define DEBUG
-//#define BLE_LOGGING
-//#define CALIBRATE
-#define DISABLE_LOGGING  // to the SD
-#define CRANK_RADIUS 0.1725
-#define LOAD_OFFSET 3300.f;  // Allie Orbea
-#define HX711_MULT  -2491.63452396
-#define GYRO_OFFSET -50
-#define HOOKEDUPLOADBACKWARDS -1
-#define DEV_NAME "AlPwr"
-*/
 
-// Universal defines
+
+/****** Bike/build configuration *******************/
+// Crank length, in meters 
+#define CRANK_RADIUS           0.1725    //? duatance from sensor position olr distance to pedal???
+#define CRANK_SENSOR_RADIUS    0.10     /* */
+
+#define LOAD_OFFSET     255904.f
+#define HX711_MULT      -2466.8989547
+
+#define IMU_GYRO_CALIBRATION_OFFSET     -31
+#define IMU_MIN_DPS_MEASUREMENT          0.2 /* d */
+
+#define HOOKEDUPLOADBACKWARDS -1
+
+
+#define DEV_NAME         "CiafePwr"
+
+
+/****** HW setup configuration *********************/
+
+/* IMU motion detection Interrupt pin, undefine it to disable feature */
+#define IMU_INT_PIN  0
 
 #define VBATPIN A7
 
