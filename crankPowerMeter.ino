@@ -119,8 +119,8 @@ void calculate_power(void)
     /* Is a new revolution completed? let's calculate the average Power */
     if (revElapsedDegrees >= 360.0)
     {
-      /* If some degrees ha been moved, just store them for the next round */
-      revElapsedDegrees = 360.0 - revElapsedDegrees;
+      /* If some degrees ha been already moved of the next revolution, just store them for the next round */
+      revElapsedDegrees = revElapsedDegrees - 360.0;
       /* Keep count of all revolutions done */
       totalCrankRevs += 1;
       /* Calculate the actual averages over the polling period. */
@@ -132,6 +132,12 @@ void calculate_power(void)
       speedMps = imu_getCrankCircularVelocity(avgDps);
       /* Let's calculate the power used for the completed revolution */
       revPower = calcPower(speedMps, avgForce);
+
+      Serial.print("Revolution Done ->");
+      Serial.print(" Deg: ");Serial.print(revElapsedDegrees);
+      Serial.print(" Speed: ");Serial.print(avgDps);
+      Serial.print(" REV: ");Serial.println(totalCrankRevs);
+      
       /* Reset averages from this polling period just carry over. */
       numPolls = 0;
       maxForce = MIN_DOUBLE;
@@ -159,8 +165,7 @@ void publish_ble_data(void)
 
       //just for debug, to delete
       Serial.print("Deg: ");Serial.print(revElapsedDegrees);
-      Serial.print(" Speed: ");Serial.print(avgDps);
-      Serial.print(" REV: ");Serial.println(totalCrankRevs);
+      Serial.print(" Speed: ");Serial.println(dps);
     }
 
     timeSinceLastUpdate = timeNowBle - lastUpdateBleBatt;
