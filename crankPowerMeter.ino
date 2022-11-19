@@ -5,7 +5,7 @@
 #include <SPI.h>
 
 #include "PowerMeter_cfg.h"
-#include "gyro.h"
+#include "imu.h"
 #include "loadCell.h"
 #include "ble.h"
 
@@ -17,6 +17,8 @@ static float dps = 0.f;
 static float angSpeed = 0.f;
 static float circular = 0.f;
 static double angle = 0;
+
+
 
 void setup() 
 {
@@ -36,22 +38,41 @@ void setup()
 
 void loop()
 {
-  imu_readData();
-  //imu_print_data();
+  get_sensor_data();
   
-  dps      = imu_getNormalAvgVelocity(dps, 0.7);
-  angSpeed = imu_getCrankCircularVelocity(dps);
-  cadence  = imu_getCrankCadence(dps);
-  angle    = imu_getCrankAngle();
+  calculate_power();
 
-  //Serial.print(F("Speed: ")); 
-  //Serial.print(dps);Serial.print(",");
-  Serial.println(100 * angSpeed);
-  //Serial.print(cadence);Serial.println(";");
-  //Serial.print(F("Angle: ")); Serial.println(angle);
-  delay(50);
+  publish_ble_data();
 
+}
+
+void get_sensor_data(void)
+{
+  static long lastUpdateSensor = 0u;
+  long timeNowSensor, timeSinceLastUpdate;
+  timeNowSensor = millis();
+  timeSinceLastUpdate = timeNowSensor - lastUpdateSensor;
   
+    /* Wait for sensor reading Rate */
+  if (timeSinceLastUpdate > SENSOR_READ_RATE)
+  {
+    /* Get updated data from sensor */
+    imu_readData();
+    /* Convert sensor data to degree/sec */
+    dps      = imu_getNormalAvgVelocity(dps, 0.7);
+    /* Convert sensor data to degree/sec */
+    angSpeed = imu_getCrankCircularVelocity(dps);
+    /* Convert sensor data to rpm/sec */
+    cadence  = imu_getCrankCadence(dps);
+    /* Convert sensor data to crank position angle */
+    angle    = imu_getCrankAngle();
+
+    lastUpdateSensor = timeNowSensor;
+  }
+}
+
+void calculate_power(void)
+{
 #if 0
   // These aren't actually the range of a double, but
   // they should easily bookend force readings.
@@ -105,8 +126,7 @@ void loop()
   Serial.print(F("DPS:   ")); Serial.println(dps);
 #endif  // DEBUG
 
-  if (ble_isConnected())
-  {
+
     // We have a central connected
     long timeNow = millis();
     long timeSinceLastUpdate = timeNow - lastUpdate;
@@ -161,11 +181,39 @@ void loop()
        //TODO blePublishBatt(batPercent);
         lastInfrequentUpdate = timeNow;
       }
-    }
   }
-  delay(LOOP_DELAY);
 #endif 
 
+}
+
+void publish_ble_data(void)
+{
+  static long lastUpdateBlePower = 0u;
+  static long lastUpdateBleBatt = 0u;
+  long timeNowBle, timeSinceLastUpdate;
+  
+  /* Any user connected? */
+  if (ble_isConnected())
+  {
+    timeNowBle = millis();
+    timeSinceLastUpdate = timeNowBle - lastUpdateBlePower;
+    /* Wait for publish Power Rate */
+    if (timeSinceLastUpdate > BLE_PUBLISH_POWER_RATE)
+    {
+      /* TODO: get power and cadence */
+      ble_PublishPower(0,0, timeNowBle);
+      lastUpdateBlePower = timeNowBle;
+    }
+
+    timeSinceLastUpdate = timeNowBle - lastUpdateBleBatt;
+    /* Wait for publish Battery Rate */
+    if (timeSinceLastUpdate > BLE_PUBLISH_BATTERY_RATE)
+    {
+      float batPercent = checkBatt();
+      ble_PublishBatt(batPercent);
+      lastUpdateBleBatt = timeNowBle;
+    }
+  }
 }
 
 /***** Local functions ***************************************************************************/
