@@ -1,25 +1,42 @@
 /**
  * Main
  */
- #include <SD.h>
-#include <SPI.h>
 
 #include "PowerMeter_cfg.h"
 #include "imu.h"
 #include "loadCell.h"
 #include "ble.h"
 
+/******* Local function ******************************/
 uint8_t checkBatt();
 int16_t calcPower(double footSpeed, double force);
 
-static float cadence = 0;
-static float dps = 0.f;
-static float angSpeed = 0.f;
-static float circular = 0.f;
-static double angle = 0;
+/******* Global variable for the project ************/
+/* Speeds/revolutions data variable */
+static double dps = 0.f;
+static double avgDps = 0.f;
+static double angSpeed = 0.f;
+static float cadence = 0.f;
+static float crankAngle = 0.f;
+static float revElapsedDegrees = 0.f;
+static uint32_t totalCrankRevs = 0;
 
+/* orce data variables */
+static double force = 0.f;
+static double avgForce = 0.f;
+static const float MIN_DOUBLE = -100000.f;
+static const float MAX_DOUBLE = 100000.f;
+static double maxForce = MIN_DOUBLE;
+static double minForce = MAX_DOUBLE;
+static int16_t numPolls = 0;
 
+/* Time data variables */
+static long lastUpdateSensor = 0u;
+static long lastUpdatePowerCalc = 0u;
+static long lastUpdateBlePower = 0u;
+static long lastUpdateBleBatt = 0u;
 
+/******* Setup *************************************/
 void setup() 
 {
   Serial.begin(115200);
@@ -48,7 +65,6 @@ void loop()
 
 void get_sensor_data(void)
 {
-  static long lastUpdateSensor = 0u;
   long timeNowSensor, timeSinceLastUpdate;
   timeNowSensor = millis();
   timeSinceLastUpdate = timeNowSensor - lastUpdateSensor;
@@ -59,13 +75,13 @@ void get_sensor_data(void)
     /* Get updated data from sensor */
     imu_readData();
     /* Convert sensor data to degree/sec */
-    dps      = imu_getNormalAvgVelocity(dps, 0.7);
+    dps        = imu_getNormalAvgVelocity(dps, SPEED_MEASUREMENT_FILTERING);
     /* Convert sensor data to degree/sec */
-    angSpeed = imu_getCrankCircularVelocity(dps);
+    angSpeed   = imu_getCrankCircularVelocity(dps);
     /* Convert sensor data to rpm/sec */
-    cadence  = imu_getCrankCadence(dps);
+    cadence    = imu_getCrankCadence(dps);
     /* Convert sensor data to crank position angle */
-    angle    = imu_getCrankAngle();
+    crankAngle = imu_getCrankAngle();
 
     lastUpdateSensor = timeNowSensor;
   }
@@ -73,123 +89,60 @@ void get_sensor_data(void)
 
 void calculate_power(void)
 {
-#if 0
-  // These aren't actually the range of a double, but
-  // they should easily bookend force readings.
-  static const float MIN_DOUBLE = -100000.f;
-  static const float MAX_DOUBLE = 100000.f;
+  long timeNowPowerCalc, timeSinceLastUpdate;
+  float speedMps;
+  int16_t revPower;
+  timeNowPowerCalc = millis();
+  timeSinceLastUpdate = timeNowPowerCalc - lastUpdatePowerCalc;
+  
+  /* Wait for sensor reading Rate */
+  if (timeSinceLastUpdate > SENSOR_READ_RATE)
+  {
+    /* Get count of number of samples used for averaging */
+    numPolls += 1;
+    /* Average speed */
+    avgDps += dps;
+    /* Now get force from the load cell */
+    force = load_getAvgForce(force, FORCE_MEASUREMENT_FILTERING);
+    /* Calculate and store the max and min. */
+    if (force > maxForce) {
+      maxForce = force;
+    }
+    if (force < minForce) {
+      minForce = force;
+    }
+    /* Average force */
+    avgForce += force;
+    /* Get elapsed degrees with current speed and elapsed time */
+    revElapsedDegrees += getDegreesFromSpeed(dps, timeSinceLastUpdate);
 
-  // Vars for polling footspeed
-  static float dps = 0.f;
-  static float avgDps = 0.f;
-  // Cadence is calculated by increasing total revolutions.
-  // TODO it's possible this rolls over, about 12 hours at 90RPM for 16 bit unsigned.
-  static uint16_t totalCrankRevs = 0;
-  // Vars for force
-  static double force = 0.f;
-  static double avgForce = 0.f;
-  // Track the max and min force per update, and exclude them.
-  static double maxForce = MIN_DOUBLE;
-  static double minForce = MAX_DOUBLE;
-  // We only publish every once-in-a-while.
-  static long lastUpdate = millis();
-  // Other things (like battery) might be on a longer update schedule for power.
-  static long lastInfrequentUpdate = millis();
-  // To find the average values to use, count the num of samples
-  // between updates.
-  static int16_t numPolls = 0;
-
-  // During every loop, we just want to get samples to calculate
-  // one power/cadence update every interval we update the central.
-
-  // Degrees per second
-  dps = load_getNormalAvgVelocity(dps, 0.9);
-  avgDps += dps;
-
-  // Now get force from the load cell.
-  force = load_getAvgForce(force, 0.8);
-  // We wanna throw out the max and min.
-  if (force > maxForce) {
-    maxForce = force;
-  }
-  if (force < minForce) {
-    minForce = force;
-  }
-  avgForce += force;
-
-  numPolls += 1;
-
-
-#ifdef DEBUG
-  // Just print these values to the serial, something easy to read.
-  Serial.print(F("Force: ")); Serial.println(force);
-  Serial.print(F("DPS:   ")); Serial.println(dps);
-#endif  // DEBUG
-
-
-    // We have a central connected
-    long timeNow = millis();
-    long timeSinceLastUpdate = timeNow - lastUpdate;
-    // Must ensure there are more than 2 polls, because we're tossing the high and low.
-    // Check to see if the updateTime fun determines the cranks are cranking (in which)
-    // case it'll aim to update once per revolution. If that's the case,
-    // increment crank revs.
-    bool pedaling = false;
-    if (timeSinceLastUpdate > updateTime(dps, &pedaling) && numPolls > 2) {
-      // Find the actual averages over the polling period.
+    /* Is a new revolution completed? let's calculate the average Power */
+    if (revElapsedDegrees >= 360.0)
+    {
+      /* If some degrees ha been moved, just store them for the next round */
+      revElapsedDegrees = 360.0 - revElapsedDegrees;
+      /* Keep count of all revolutions done */
+      totalCrankRevs += 1;
+      /* Calculate the actual averages over the polling period. */
       avgDps = avgDps / numPolls;
-      // Subtract 2 from the numPolls for force because we're removing the high and
-      // low here.
+      /* Subtract 2 from the numPolls for force because we're removing the high and low here.*/
       avgForce = avgForce - minForce - maxForce;
       avgForce = avgForce / (numPolls - 2);
-
-      // Convert dps to mps
-      float mps = getCircularVelocity(avgDps);
-
-      // That's all the ingredients, now we can find the power.
-      int16_t power = calcPower(mps, avgForce);
-
-      // Also bake in a rolling average for all records reported to
-      // the head unit. Will hopefully smooth out the power meter
-      // spiking about.
-      //power = rollAvgPower(power, 0.7f);
-
-#ifdef DEBUG
-  // Just print these values to the serial, something easy to read.
-  Serial.print(F("Pwr: ")); Serial.println(power);
-#endif  // DEBUG
-
-      // The time since last update, as published, is actually at
-      // a resolution of 1/1024 seconds, per the spec. BLE will convert, just send
-      // the time, in millis.
-      if (pedaling) {
-        totalCrankRevs += 1;
-      }
-
-
-      // Reset the latest update to now.
-      lastUpdate = timeNow;
-      // Let the averages from this polling period just carry over.
-      numPolls = 1;
+      /* Convert dedrees/s to m/s */
+      speedMps = imu_getCrankCircularVelocity(avgDps);
+      /* Let's calculate the power used for the completed revolution */
+      revPower = calcPower(speedMps, avgForce);
+      /* Reset averages from this polling period just carry over. */
+      numPolls = 0;
       maxForce = MIN_DOUBLE;
       minForce = MAX_DOUBLE;
-
-      // And check the battery, don't need to do it nearly this often though.
-      // 1000 ms / sec * 60 sec / min * 5 = 5 minutes
-      if ((timeNow - lastInfrequentUpdate) > (1000 * 60 * 5)) {
-        float batPercent = checkBatt();
-       //TODO blePublishBatt(batPercent);
-        lastInfrequentUpdate = timeNow;
-      }
+    }
+    lastUpdatePowerCalc = timeNowPowerCalc;
   }
-#endif 
-
 }
 
 void publish_ble_data(void)
 {
-  static long lastUpdateBlePower = 0u;
-  static long lastUpdateBleBatt = 0u;
   long timeNowBle, timeSinceLastUpdate;
   
   /* Any user connected? */
@@ -203,6 +156,11 @@ void publish_ble_data(void)
       /* TODO: get power and cadence */
       ble_PublishPower(0,0, timeNowBle);
       lastUpdateBlePower = timeNowBle;
+
+      //just for debug, to delete
+      Serial.print("Deg: ");Serial.print(revElapsedDegrees);
+      Serial.print(" Speed: ");Serial.print(avgDps);
+      Serial.print(" REV: ");Serial.println(totalCrankRevs);
     }
 
     timeSinceLastUpdate = timeNowBle - lastUpdateBleBatt;
@@ -217,6 +175,15 @@ void publish_ble_data(void)
 }
 
 /***** Local functions ***************************************************************************/
+
+/**
+ * Calculate the number of degrees moved dureing the elapsedTime at the speed provided by 
+ * speedDegps. (elapsedTime units are ms, and speedDegps units deg/s
+ */
+float getDegreesFromSpeed(float speedDegps, long elapsedTime)
+{
+  return (float)((speedDegps * elapsedTime)/1000);
+}
 
 /**
  * Rolling average for power reported to head unit.

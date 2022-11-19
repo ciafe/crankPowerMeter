@@ -11,9 +11,11 @@
 #define DISABLE_LOGGING
 
 #define SENSOR_READ_RATE          (100u)
-#define BLE_PUBLISH_POWER_RATE    (1000u * 2u)
+#define BLE_PUBLISH_POWER_RATE    (1000u * 1u)
 #define BLE_PUBLISH_BATTERY_RATE  (1000u * 60u * 5u) /* 1000 ms / sec * 60 sec / min * 5 = 5 minutes */
 
+#define SPEED_MEASUREMENT_FILTERING  0.7
+#define FORCE_MEASUREMENT_FILTERING  0.8
 
 /****** Bike/build configuration *******************/
 // Crank length, in meters 

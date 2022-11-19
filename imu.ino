@@ -29,6 +29,8 @@ bool imu_Setup(void)
 	
     // Set that calibration -- NOT supported by Adafruit
     //gyro.setZGyroOffset(IMU_GYRO_CALIBRATION_OFFSET);
+
+    //Todo, does it make sense to use cycle mode?
     
     /* configure motion detection Interrupt - If configured */
 	#if defined(IMU_INT_PIN)
@@ -66,11 +68,11 @@ void imu_readData(void)
   mpu_sensor.getEvent(&last_acc, &last_g, &last_temp);
 }
 
-float imu_getNormalAvgVelocity(float lastAvg, const double filter)
+double imu_getNormalAvgVelocity(double lastAvg, const double filter)
 {
   /* Take Z giro rad/s data: due to sensor mount in the bike, Z is the measure of the rotation of the shaft */
   /* Use the absolute value, just to discard the mounting side of the sensor (left/rigth shaft arm). */
-  float rotz = abs(last_g.gyro.z);
+  double rotz = abs(last_g.gyro.z);
   if (rotz < IMU_MIN_DPS_MEASUREMENT) {
     /* Magic number here, but less than 90 dps is less than 1 crank rotation 
        in 4 seconds (15 RPM), just assume it's noise from the road bumps. */
@@ -80,13 +82,13 @@ float imu_getNormalAvgVelocity(float lastAvg, const double filter)
   rotz = (180 * rotz) / PI;
   
   /* Return a rolling average filtered value */
-  float newavg = (rotz * filter) + (lastAvg * (1.0 - filter));
+  double newavg = (rotz * filter) + (lastAvg * (1.0 - filter));
 
   return newavg;
 }
 
 
-float imu_getCrankCircularVelocity(float dps) {
+double imu_getCrankCircularVelocity(double dps) {
   /* Get angular velocity based on sensor velocity and distance from the center of the cranck shaft to the sensor:
   
      2 * PI * radians = 360 degrees
@@ -104,7 +106,7 @@ float imu_getCrankCircularVelocity(float dps) {
 }
 
 
-float imu_getCrankCadence(float dps)
+double imu_getCrankCadence(double dps)
 {
   /* Cadence is the normalized angular velocity, times 60/360, which
      converts from deg/s to rotations/min. x * (60/360) = x / 6. */
@@ -128,7 +130,7 @@ double imu_getCrankAngle(void)
 
 void imu_calibrate_reading(void)
 {
-#if 0
+#if 0 //TODO
   /* Calibrate the gyro */
   gyro.setZGyroOffset(0);
   float sumZ = 0;
