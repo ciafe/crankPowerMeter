@@ -25,7 +25,7 @@ bool imu_Setup(void)
     /* Configure sensor */
     mpu_sensor.setGyroRange(MPU6050_RANGE_1000_DEG); //Why not MPU6050_RANGE_500_DEG?
     mpu_sensor.setFilterBandwidth(MPU6050_BAND_44_HZ); // test even with lowe filters, low speed Gyro application
-    mpu_sensor.setAccelerometerRange(MPU6050_RANGE_2_G); //Why not 2G?
+    mpu_sensor.setAccelerometerRange(MPU6050_RANGE_2_G);
 	
     // Set that calibration -- NOT supported by Adafruit
     //gyro.setZGyroOffset(IMU_GYRO_CALIBRATION_OFFSET);
@@ -41,8 +41,8 @@ bool imu_Setup(void)
     pinMode(IMU_INT_PIN, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(IMU_INT_PIN), imu_motionDetectInterrupt, RISING);
 	#else
-	mpu_sensor.setMotionInterrupt(false);
-    #endif
+	  mpu_sensor.setMotionInterrupt(false);
+  #endif
 	
 	return(true);
   }
@@ -76,12 +76,11 @@ float imu_getNormalAvgVelocity(float lastAvg, const double filter)
        in 4 seconds (15 RPM), just assume it's noise from the road bumps. */
     rotz = 0.f;
   }
-
-  /* Convert to deg/s */
-  //rotz = (180 * rotz) / PI;
+  /* Library reports rad/s, Convert to deg/s */
+  rotz = (180 * rotz) / PI;
   
   /* Return a rolling average filtered value */
-  float newavg = (rotz * filter) + (lastAvg * (1 - filter));
+  float newavg = (rotz * filter) + (lastAvg * (1.0 - filter));
 
   return newavg;
 }
@@ -98,22 +97,13 @@ float imu_getCrankCircularVelocity(float dps) {
     
      It all comes out to:
      m/s = ((dps * (PI / 180)) / (2 * PI)) * (2 * PI * CRANK_RADIUS);
-	 m/s = (dps * PI * CRANK_RADIUS) / 180;
+	   m/s = (dps * PI * CRANK_RADIUS) / 180;
   
   */
   return (dps * PI * CRANK_RADIUS) / 180;
 }
 
-/**
- *  Provide angular velocity, degrees/sec.
- *
- *  Returns a new cadence measurement.
- *
- *  Note this isn't necessary for power measurement, but it's a gimme addon
- *  given what we already have and useful for the athlete.
- *
- *  Returns an int16 of cadence, rotations/minute.
- */
+
 float imu_getCrankCadence(float dps)
 {
   /* Cadence is the normalized angular velocity, times 60/360, which

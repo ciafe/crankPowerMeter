@@ -5,26 +5,24 @@
 #include <Wire.h>
 #include <Adafruit_MPU6050.h>
 
-extern bool imu_Setup(void);
+bool imu_Setup(void);
 
-extern void imu_readData(void);
+void imu_readData(void);
 
 
 /**
  * Gets a normalized averaged rotational velocity calculation. The MPU6050 library supports a
  * normalized gyroscope reading, which trims off outliers and scales the values to deg/s.
  *
- * An exponential average is applied to further smooth data, based on filter applied [0-1]. I don't
- * love this, becaues it means no value is every entirely discarded, but exponential decay
- * probably makes it effectively the same. Maybe something to revisit.
+ * An exponential average is applied to further smooth data, based on filter applied [0-1]. 
  *
  * Returns a value for foot speed, in degrees/second.
  */
-extern float imu_getNormalAvgVelocity(float lastAvg, const double filter);
+float imu_getNormalAvgVelocity(float lastAvg, const double filter);
 
 
 /**
- * Provide the average rate, in degrees/second.
+ * Provide the linear speed of the pedal, end of the ckank shaft, in m/second.
  *
  * Returns the circular velocity of the rider's foot. Takes in the crank's averaged rotational
  * velocity, converts it to radians, multiplies by the crank radius, and returns the converted
@@ -34,7 +32,16 @@ extern float imu_getNormalAvgVelocity(float lastAvg, const double filter);
  */
 float  imu_getCrankCircularVelocity(float dps);
 
+/**
+ *  Provide cadence of crank pedal, rotations/minute.
+ *
+ *  Note this isn't necessary for power measurement, but it's a gimme addon
+ *  given what we already have and useful for the athlete.
+ *
+ *  Returns an int16 of cadence, rotations/minute.
+ */
 float  imu_getCrankCadence(float dps);
+
 
 double imu_getCrankAngle(void);
 
