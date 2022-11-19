@@ -26,56 +26,46 @@
 #define EXCIT_NEG_CLK  10
 
 
-HX711 load;
+HX711 loadsensor;
 
-void loadSetup() {
+void load_Setup() {
   // 'load' is declared in power.ini
-  load.begin(EXCIT_POS_DATA, EXCIT_NEG_CLK);
+  loadsensor.begin(EXCIT_POS_DATA, EXCIT_NEG_CLK);
   // Set the scale for the multiplier to get grams.
-  load.set_scale(HX711_MULT);
+  loadsensor.set_scale(HX711_MULT);
   // Lots of calls to get load on startup, this is the offset
   // that will be used throughout. Make sure no weight on the
   // pedal at startup, obviously.
 
-// TODO get a calibration mode.
 #ifdef CALIBRATE
-  load.tare(NUM_TARE_CALLS); 
-#endif // CALIBRATE
-
-#ifndef CALIBRATE
-  // In lieu of a calibration mode and way to save it, manually.
-  // This zeros, or tares.
-  float offset = LOAD_OFFSET;  // Steve Merckx
-  load.set_offset(offset);
-#endif // CALIBRATE
+  loadsensor.tare(NUM_TARE_CALLS); 
+#else
+  float offset = LOAD_OFFSET;
+  loadsensor.set_offset(offset);
+#endif
   
-  load.power_up();
+  loadsensor.power_up();
 
 #ifdef DEBUG
-  showConfigs();
+  load_showConfigs();
 #endif
 }
 
-#ifdef DEBUG
-void showConfigs(void) {
+
+void load_showConfigs(void) {
 //  Serial.println();
-//  Serial.printf(" * Load offset:       %d\n", load.get_offset());
-//  Serial.printf(" * Load multiplier:   %.3f\n", load.get_scale());
+//  Serial.printf(" * Load offset:       %d\n", loadsensor.get_offset());
+//  Serial.printf(" * Load multiplier:   %.3f\n", loadsensor.get_scale());
 //  Serial.println("Power meter calibrated.");
 }
-#endif // DEBUG
 
-/**
- * Get the current force from the load cell. Returns an exponentially
- * rolling average, in Newtons.
- */
-double getAvgForce(const double & lastAvg) {
-  const static double WEIGHT = 0.80;
+
+double load_getAvgForce(const double & lastAvg, const double filter) {
   static double currentData = 0;
 
-  currentData = load.get_units(NUM_RAW_SAMPLES) * HOOKEDUPLOADBACKWARDS;
+  currentData = loadsensor.get_units(NUM_RAW_SAMPLES) * HOOKEDUPLOADBACKWARDS;
 
   // Return a rolling average, including the last avg readings.
   // e.g. if weight is 0.90, it's 10% what it used to be, 90% this new reading.
-  return (currentData * WEIGHT) + (lastAvg * (1 - WEIGHT));
+  return (currentData * filter) + (lastAvg * (1 - filter));
 }
