@@ -28,7 +28,7 @@ static const float MIN_DOUBLE = -100000.f;
 static const float MAX_DOUBLE = 100000.f;
 static double maxForce = MIN_DOUBLE;
 static double minForce = MAX_DOUBLE;
-static int16_t numPolls = 0;
+static int32_t numPolls = 0;
 
 /* Time data variables */
 static long lastUpdateSensor = 0u;
@@ -203,26 +203,6 @@ int16_t rollAvgPower(int16_t current, float weight) {
   return rollingAvg;
 }
 
-/**
- * Figure out how long to sleep in the loops. We'd like to tie the update interval
- * to the cadence, but if they stop pedaling need some minimum.
- *
- * Return update interval, in milliseconds.
- */
-float updateTime(float dps, bool *pedaling) {
-  // So knowing the dps, how long for 360 degrees?
-  float del = min((float)MIN_UPDATE_FREQ, (float)(1000.0 * (360.0 / dps)));
-  if (del < MIN_UPDATE_FREQ) {
-      // Let the caller know we didn't just hit the max pause,
-      // the cranks are spinning.
-      *pedaling = true;
-  }
-  // Because need to account for delay, on average get 1 rotation. Empirically the overhead
-  // for calls in the loop is about 20 ms, plus the coded loop delay. If we account for half of that,
-  // we should be on average right on 1 rotation. We want to be within half of the overhead time
-  // for a perfect 360 degrees.
-  return (del - (0.5 * (LOOP_DELAY + 30)));
-}
 
 /**
  * Given the footspeed (angular velocity) and force, power falls out.
