@@ -26,7 +26,7 @@ double load_getAvgForce(const double & lastAvg, const double filter) {
   currentData = loadsensor.get_units() * HOOKEDUPLOADBACKWARDS;
 
   /* If measured data is out of range (measurement error???) just discard and return previous value */
-  if (currentData > HX711_FORCE_LIMIT_RANGE) || (currentData < (-1 * HX711_FORCE_LIMIT_RANGE))
+  if ((currentData > HX711_FORCE_LIMIT_RANGE) || (currentData < (-1 * HX711_FORCE_LIMIT_RANGE)))
   {
     currentData = lastAvg;
   }
