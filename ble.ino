@@ -46,20 +46,20 @@ void ble_setupLogger(void) {
 
 boolean ble_isConnected(void)
 {
-  return false;
+  return true;
 }
 
 /*
  * Publish the instantaneous power measurement.
  */
 void ble_PublishPower(int16_t instantPwr, uint16_t crankRevs, long millisLast) {
-  Serial.println("BLE DUMMY PUBLISH POWER");
+  //Serial.println("BLE DUMMY PUBLISH POWER");
 }
 /*
  * Publish the battery status measurement.
  */
 void ble_PublishBatt(uint8_t battPercent) {
-  Serial.println("BLE DUMMY PUBLISH BATT");
+  //Serial.println("BLE DUMMY PUBLISH BATT");
 }
 
 /*

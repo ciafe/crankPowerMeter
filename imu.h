@@ -18,11 +18,11 @@ void imu_readData(void);
  *
  * Returns a value for foot speed, in degrees/second.
  */
-float imu_getNormalAvgVelocity(float lastAvg, const double filter);
+double imu_getNormalAvgVelocity(double lastAvg, const double filter);
 
 
 /**
- * Provide the linear speed of the pedal, end of the ckank shaft, in m/second.
+ * Provide the linear speed of the pedal, end of the ckank shaft, in degrees/second.
  *
  * Returns the circular velocity of the rider's foot. Takes in the crank's averaged rotational
  * velocity, converts it to radians, multiplies by the crank radius, and returns the converted
@@ -30,7 +30,7 @@ float imu_getNormalAvgVelocity(float lastAvg, const double filter);
  *
  * Value returned is in meters/second
  */
-float  imu_getCrankCircularVelocity(float dps);
+double imu_getCrankCircularVelocity(double dps);
 
 /**
  *  Provide cadence of crank pedal, rotations/minute.
@@ -40,7 +40,7 @@ float  imu_getCrankCircularVelocity(float dps);
  *
  *  Returns an int16 of cadence, rotations/minute.
  */
-float  imu_getCrankCadence(float dps);
+double imu_getCrankCadence(double dps);
 
 
 double imu_getCrankAngle(void);

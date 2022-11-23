@@ -11,25 +11,27 @@
 #define DISABLE_LOGGING
 
 #define SENSOR_READ_RATE          (100u)
-#define BLE_PUBLISH_POWER_RATE    (1000u * 2u)
+#define BLE_PUBLISH_POWER_RATE    (1000u * 1u)
 #define BLE_PUBLISH_BATTERY_RATE  (1000u * 60u * 5u) /* 1000 ms / sec * 60 sec / min * 5 = 5 minutes */
 
+#define SPEED_MEASUREMENT_FILTERING  0.8
+#define FORCE_MEASUREMENT_FILTERING  0.8
 
 /****** Bike/build configuration *******************/
 // Crank length, in meters 
-#define CRANK_RADIUS           0.1725    //? duatance from sensor position olr distance to pedal???
-#define CRANK_SENSOR_RADIUS    0.10     /* */
+#define CRANK_RADIUS                   0.1725    /* Distance from the cranck center to the pedal, in m */
+#define CRANK_SENSOR_RADIUS            0.10      /* */
 
-#define LOAD_OFFSET     255904.f
-#define HX711_MULT      -2466.8989547
+#define HX711_SENSOR_OFFSET            -1099400  /* Shall be measured with crank without load in vertical position */
+#define HX711_MULT_SCALE                85770    /* Shall be measured with horitzontal with a known load in kg */
+#define HX711_FORCE_LIMIT_RANGE         500      /* Limit measurement range of Force (avoid spikes detected) */
 
-#define IMU_GYRO_CALIBRATION_OFFSET     -31
-#define IMU_MIN_DPS_MEASUREMENT          0.2 /* d */
+#define IMU_GYRO_CALIBRATION_OFFSET    -31
+#define IMU_MIN_DPS_MEASUREMENT         0.2 /* d */
 
-#define HOOKEDUPLOADBACKWARDS -1
+#define HOOKEDUPLOADBACKWARDS         -1   /* To allow to invert load cell sensor measurement, set 1 or -1 */
 
-
-#define DEV_NAME         "CiafePwr"
+#define BLE_DEV_NAME                   "CiafePwr"
 
 
 /****** HW setup configuration *********************/
@@ -57,5 +59,10 @@
 // TODO Though not optimal for power, not sure how much it takes.
 #define LED_PIN 33
 #define SD_CS_PIN 5
+
+/* Load cell sensor HX711 sensor pins */
+#define HX711_POS_DATA 9
+#define HX711_NEG_CLK  8
+
 
 #endif
