@@ -1,28 +1,16 @@
-/**
- * This file keeps the BLE helpers, to send the data over bluetooth
- * to the bike computer. Or any other receiver, if dev/debug.
- *
- * For the Adafruit BLE lib, see:
- * https://github.com/adafruit/Adafruit_nRF52_Arduino/tree/bd0747473242d5d7c58ebc67ab0aa5098db56547/libraries/Bluefruit52Lib
- */
+
  
-#include "ble.h"
-
-#include <stdarg.h>
-
-// Service and character constants at:
-// https://github.com/adafruit/Adafruit_nRF52_Arduino/blob/bd0747473242d5d7c58ebc67ab0aa5098db56547/libraries/Bluefruit52Lib/src/BLEUuid.h
-/* Pwr Service Definitions
- * Cycling Power Service:      0x1818
- * Power Measurement Char:     0x2A63
- * Cycling Power Feature Char: 0x2A65
- * Sensor Location Char:       0x2A5D
- */
+#include "ble_ext.h"
 
 
 void ble_Setup(void) {
+  
+    BLEDevice::init(BLE_DEV_NAME);
+    
+    InitBLEServer();
 
 }
+
 
 void ble_startAdvertising(void) {
 
@@ -53,7 +41,27 @@ boolean ble_isConnected(void)
  * Publish the instantaneous power measurement.
  */
 void ble_PublishPower(int16_t instantPwr, uint16_t crankRevs, long millisLast) {
-  //Serial.println("BLE DUMMY PUBLISH POWER");
+  Serial.println("BLE DUMMY PUBLISH POWER");
+
+  powerIn   = powerIn + 1u;
+  if (powerIn > 1000)
+  {
+    powerIn = 0;
+  }
+  cadenceIn = 90;
+  speedOut  = 25; 
+
+  //speedOut = (cadenceIn * 2.75 * 2.08 * 60*gears[gearIndex]) / 10;            // calculated speed, required by the specification
+  indoorBikeDataCharacteristicData[2] = (uint8_t)(speedOut & 0xff);
+  indoorBikeDataCharacteristicData[3] = (uint8_t)(speedOut >> 8);             // speed value with little endian order
+  indoorBikeDataCharacteristicData[4] = (uint8_t)((cadenceIn * 2) & 0xff);        
+  indoorBikeDataCharacteristicData[5] = (uint8_t)((cadenceIn * 2) >> 8);          // cadence value
+  indoorBikeDataCharacteristicData[6] = (uint8_t)(constrain(powerIn, 0, 4000) & 0xff);
+  indoorBikeDataCharacteristicData[7] = (uint8_t)(constrain(powerIn, 0, 4000) >> 8);    // power value, constrained to avoid negative values, although the specification allows for a sint16
+    
+  indoorBikeDataCharacteristic.setValue(indoorBikeDataCharacteristicData, 8);       // values sent
+  indoorBikeDataCharacteristic.notify();                          // device notified
+  
 }
 /*
  * Publish the battery status measurement.
