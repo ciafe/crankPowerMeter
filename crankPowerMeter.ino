@@ -24,6 +24,7 @@ static uint32_t totalCrankRevs = 0;
 /* orce data variables */
 static double force = 0.f;
 static double avgForce = 0.f;
+static double avgCadence = 0.f;
 static const float MIN_DOUBLE = -100000.f;
 static const float MAX_DOUBLE = 100000.f;
 static double maxForce = MIN_DOUBLE;
@@ -103,7 +104,7 @@ void calculate_power(void)
     /* Average speed */
     avgDps += dps;
     /* Now get force from the load cell */
-    force = load_getAvgForce(force, FORCE_MEASUREMENT_FILTERING);
+    force = load_getAvgForce(force, FORCE_MEASUREMENT_FILTERING); //need to make abs()??? or simple remove negative?
     /* Calculate and store the max and min. */
     if (force > maxForce) {
       maxForce = force;
@@ -113,6 +114,8 @@ void calculate_power(void)
     }
     /* Average force */
     avgForce += force;
+    //Serial.println(force, 3);
+    
     /* Get elapsed degrees with current speed and elapsed time */
     revElapsedDegrees += getDegreesFromSpeed(dps, timeSinceLastUpdate);
 
@@ -130,13 +133,15 @@ void calculate_power(void)
       avgForce = avgForce / (numPolls - 2);
       /* Convert dedrees/s to m/s */
       speedMps = imu_getCrankCircularVelocity(avgDps);
+      /* Convert degree/s to rpm */
+      avgCadence = imu_getCrankCadence(avgDps);
       /* Let's calculate the power used for the completed revolution */
       revPower = calcPower(speedMps, avgForce);
 
-      Serial.print("Revolution Done ->");
-      Serial.print(" Deg: ");Serial.print(revElapsedDegrees);
-      Serial.print(" Speed: ");Serial.print(avgDps);
-      Serial.print(" REV: ");Serial.println(totalCrankRevs);
+      //Serial.print("Revolution Done ->");
+      //Serial.print(" Cadence: ");Serial.print(avgCadence);
+      //Serial.print(" Force: ");Serial.print(avgForce);
+      //Serial.print(" Rev: ");Serial.println(totalCrankRevs);
       
       /* Reset averages from this polling period just carry over. */
       numPolls = 0;
@@ -160,12 +165,12 @@ void publish_ble_data(void)
     if (timeSinceLastUpdate > BLE_PUBLISH_POWER_RATE)
     {
       /* TODO: get power and cadence */
-      ble_PublishPower(0,0, timeNowBle);
+      ble_PublishPower((uint16_t)avgForce, (uint16_t)avgCadence, totalCrankRevs, timeNowBle);
       lastUpdateBlePower = timeNowBle;
 
       //just for debug, to delete
-      Serial.print("Deg: ");Serial.print(revElapsedDegrees);
-      Serial.print(" Speed: ");Serial.println(dps);
+      //Serial.print("Deg: ");Serial.print(revElapsedDegrees);
+      //Serial.print(" Speed: ");Serial.println(dps);
     }
 
     timeSinceLastUpdate = timeNowBle - lastUpdateBleBatt;

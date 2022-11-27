@@ -97,16 +97,13 @@ boolean ble_isConnected(void)
 /*
  * Publish the instantaneous power measurement.
  */
-void ble_PublishPower(int16_t instantPwr, uint16_t crankRevs, long millisLast) {
-  Serial.println("BLE DUMMY PUBLISH POWER");
+void ble_PublishPower(int16_t instantPwr, uint16_t cadence, uint32_t crankRevs, long millisLast) {
+  //Serial.println("BLE DUMMY PUBLISH POWER");
 
-  powerIn   = powerIn + 1u;
-  if (powerIn > 50)
-  {
-    powerIn = 0;
-  }
-  cadenceIn = 90;
-  speedOut  = 25; 
+  speedOut = (uint16_t)crankRevs;
+  powerIn = crankRevs; //instantPwr;
+  cadenceIn = cadence;
+  
 
   //speedOut = (cadenceIn * 2.75 * 2.08 * 60*gears[gearIndex]) / 10;            // calculated speed, required by the specification
   indoorBikeDataCharacteristicData[2] = (uint8_t)(speedOut & 0xff);
