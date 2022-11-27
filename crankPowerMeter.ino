@@ -76,7 +76,7 @@ void get_sensor_data(void)
     /* Get updated data from sensor */
     imu_readData();
     /* Convert sensor data to degree/sec */
-    dps        = imu_getNormalAvgVelocity(dps, SPEED_MEASUREMENT_FILTERING);
+    dps        = imu_getNormalAvgVelocity(dps, SENSOR_SPEED_FILTERING);
     /* Convert sensor data to degree/sec */
     angSpeed   = imu_getCrankCircularVelocity(dps);
     /* Convert sensor data to rpm/sec */
@@ -104,7 +104,7 @@ void calculate_power(void)
     /* Average speed */
     avgDps += dps;
     /* Now get force from the load cell */
-    force = load_getAvgForce(force, FORCE_MEASUREMENT_FILTERING); //need to make abs()??? or simple remove negative?
+    force = load_getAvgForce(force, SENSOR_FORCE_FILTERING); //need to make abs()??? or simple remove negative?
     /* Calculate and store the max and min. */
     if (force > maxForce) {
       maxForce = force;

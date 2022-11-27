@@ -6,7 +6,6 @@
 HX711 loadsensor;
 
 void load_Setup() {
-  // 'load' is declared in power.ini
   loadsensor.begin(HX711_POS_DATA, HX711_NEG_CLK);
   /* Set the scale for the multiplier to get grams */
   loadsensor.set_scale(HX711_MULT_SCALE);
