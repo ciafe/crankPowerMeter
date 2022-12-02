@@ -10,6 +10,8 @@
 /******* Local function ******************************/
 uint8_t checkBatt();
 int16_t calcPower(double footSpeed, double force);
+void resetRevolutionAveragingData(void);
+void resetMeterData(void);
 
 /******* Global variable for the project ************/
 /* Speeds/revolutions data variable */
@@ -21,21 +23,24 @@ static float crankAngle = 0.f;
 static float revElapsedDegrees = 0.f;
 static uint32_t totalCrankRevs = 0;
 
-/* orce data variables */
+/* Force calculation data variables */
 static double force = 0.f;
 static double avgForce = 0.f;
 static double avgCadence = 0.f;
+static int16_t avgPower = 0;
 static const float MIN_DOUBLE = -100000.f;
 static const float MAX_DOUBLE = 100000.f;
 static double maxForce = MIN_DOUBLE;
 static double minForce = MAX_DOUBLE;
 static int32_t numPolls = 0;
+static int16_t revPower = 0;
 
 /* Time data variables */
 static long lastUpdateSensor = 0u;
 static long lastUpdatePowerCalc = 0u;
 static long lastUpdateBlePower = 0u;
 static long lastUpdateBleBatt = 0u;
+static long lastUpdateCadence = 0u;
 
 /******* Setup *************************************/
 void setup() 
@@ -66,7 +71,7 @@ void loop()
 
 void get_sensor_data(void)
 {
-  long timeNowSensor, timeSinceLastUpdate;
+  long timeNowSensor, timeSinceLastUpdate, timeSinceLastUpdateCadence;
   timeNowSensor = millis();
   timeSinceLastUpdate = timeNowSensor - lastUpdateSensor;
   
@@ -90,9 +95,8 @@ void get_sensor_data(void)
 
 void calculate_power(void)
 {
-  long timeNowPowerCalc, timeSinceLastUpdate;
+  long timeNowPowerCalc, timeSinceLastUpdate, timeSinceLastUpdateCadence;
   float speedMps;
-  int16_t revPower;
   timeNowPowerCalc = millis();
   timeSinceLastUpdate = timeNowPowerCalc - lastUpdatePowerCalc;
   
@@ -137,6 +141,8 @@ void calculate_power(void)
       avgCadence = imu_getCrankCadence(avgDps);
       /* Let's calculate the power used for the completed revolution */
       revPower = calcPower(speedMps, avgForce);
+      /* Power filtering */
+      avgPower = rollAvgPower(revPower, POWER_FILTERING);
 
       //Serial.print("Revolution Done ->");
       //Serial.print(" Cadence: ");Serial.print(avgCadence);
@@ -145,8 +151,28 @@ void calculate_power(void)
       
       /* Reset averages from this polling period just carry over. */
       numPolls = 0;
+      avgDps   = 0;
+      avgForce = 0;
       maxForce = MIN_DOUBLE;
       minForce = MAX_DOUBLE;
+
+      /* Store the time when the last average candence has been updated  */
+      lastUpdateCadence = timeNowPowerCalc;
+    }
+    else
+    {  /* Check if movement has been stopped at least during one revolution at minimum RPMs,
+          and then update average values accordingly */
+      timeSinceLastUpdateCadence = timeNowPowerCalc - lastUpdateCadence;
+      if ((dps == 0) && (timeSinceLastUpdateCadence > CADENCE_MIN_VALUE_REV))
+      {
+        lastUpdateCadence = timeNowPowerCalc;
+        /* Reset measurement values */
+        resetMeterData();
+        /* Reset previous revolution measurements */
+        resetRevolutionAveragingData();
+        /* Set to zero rev degrees, let's start from 0 again */
+        revElapsedDegrees = 0;
+      }
     }
     lastUpdatePowerCalc = timeNowPowerCalc;
   }
@@ -164,8 +190,7 @@ void publish_ble_data(void)
     /* Wait for publish Power Rate */
     if (timeSinceLastUpdate > BLE_PUBLISH_POWER_RATE)
     {
-      /* TODO: get power and cadence */
-      ble_PublishPower((uint16_t)avgForce, (uint16_t)avgCadence, totalCrankRevs, timeNowBle);
+      ble_PublishPower(avgPower, (uint16_t)avgCadence, totalCrankRevs, timeNowBle);
       lastUpdateBlePower = timeNowBle;
 
       //just for debug, to delete
@@ -185,6 +210,22 @@ void publish_ble_data(void)
 }
 
 /***** Local functions ***************************************************************************/
+
+void resetRevolutionAveragingData(void)
+{
+  numPolls = 0;
+  avgDps   = 0;
+  avgForce = 0;
+  revPower = 0;
+  maxForce = MIN_DOUBLE;
+  minForce = MAX_DOUBLE;
+}
+
+void resetMeterData(void)
+{
+  avgCadence = 0;
+  avgPower = 0;
+}
 
 /**
  * Calculate the number of degrees moved dureing the elapsedTime at the speed provided by 

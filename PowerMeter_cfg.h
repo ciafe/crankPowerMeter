@@ -22,7 +22,9 @@
 #define SENSOR_READ_RATE          (100u)
 #define SENSOR_SPEED_FILTERING    0.9
 #define SENSOR_FORCE_FILTERING    0.9
+#define POWER_FILTERING           0.9
 
+#define CADENCE_MIN_VALUE_REV      34  /* value in ms of a revolution in the slowest cadence, before to report 0 rpms */
 
 /****** Bike/build configuration *******************/
 // Crank length, in meters 
@@ -34,7 +36,7 @@
 #define HX711_FORCE_LIMIT_RANGE        500      /* Limit measurement range of Force (avoid spikes detected) */
 
 #define IMU_GYRO_CALIBRATION_OFFSET    -31
-#define IMU_MIN_DPS_MEASUREMENT         0.2 /* d */
+#define IMU_MIN_DPS_MEASUREMENT         0.2 /* rad/s, equivalent to 2 rpm */
 #define IMU_CALIBRATION_SAMPLES         40
 
 
@@ -56,7 +58,8 @@
 #define IMU_I2C_SCL    14
 #endif
 
-#define LED_PIN         4
+#define LED_WHITE_PIN   4  /* configured for ESP32-CAM */
+#define LED_BOARD_PIN  33  /* configured for ESP32-CAM */
 
 #define VBATPIN         0 //Not supported yet
 
