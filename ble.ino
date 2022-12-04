@@ -1,8 +1,9 @@
 
+
  
 #include "ble.h"
 
-
+#ifndef DISABLE_BLE
 #include <BLEDevice.h>
 #include <BLEUtils.h>
 #include <BLEServer.h>
@@ -55,16 +56,18 @@ uint8_t fitnessMachineFeatureCharacteristicsData[8] = {  // values for setup - l
   (uint8_t)(targetSettingFeaturesCharacteristicsDef >> 24) 
 };
 
-
+#endif
 
 int16_t cadenceIn;
 int16_t powerIn;
 
 void ble_Setup(void) {
-  
+
+  #ifndef DISABLE_BLE
     BLEDevice::init(BLE_DEV_NAME);
     
     InitBLEServer();
+    #endif
 
 }
 
@@ -99,7 +102,7 @@ boolean ble_isConnected(void)
  */
 void ble_PublishPower(int16_t instantPwr, uint16_t cadence, uint32_t crankRevs, long millisLast) {
   //Serial.println("BLE DUMMY PUBLISH POWER");
-
+#ifndef DISABLE_BLE
   speedOut = (uint16_t)crankRevs;
   powerIn = crankRevs; //instantPwr;
   cadenceIn = cadence;
@@ -115,7 +118,7 @@ void ble_PublishPower(int16_t instantPwr, uint16_t cadence, uint32_t crankRevs, 
     
   indoorBikeDataCharacteristic.setValue(indoorBikeDataCharacteristicData, 8);       // values sent
   indoorBikeDataCharacteristic.notify();                          // device notified
-  
+  #endif
 }
 /*
  * Publish the battery status measurement.
@@ -124,6 +127,7 @@ void ble_PublishBatt(uint8_t battPercent) {
   //Serial.println("BLE DUMMY PUBLISH BATT");
 }
 
+#ifndef DISABLE_BLE
 void InitBLEServer() {
   BLEServer *pServer = BLEDevice::createServer();
 
@@ -153,3 +157,4 @@ void InitBLEServer() {
   
   fitnessMachineFeatureCharacteristics.setValue(fitnessMachineFeatureCharacteristicsData, 8); // flags
 }
+#endif

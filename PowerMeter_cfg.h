@@ -5,12 +5,14 @@
 
 /****** General configuration ***********************/
 //#define DEBUG_PRINT_SPEED        /* Enable/Disable debug print measured angular speed */
-#define DEBUG_PRINT_FORCE        /* Enable/Disable debug print measured force */
+//#define DEBUG_PRINT_FORCE        /* Enable/Disable debug print measured force */
 //#define DEBUG_PRINT_REV          /* Enable/Disable debug print measured revolution data */
 
 //#define SD_LOGGING               /* TODO: Enable/Disable logging of sensor data in SD file */
 
 //#define USE_MANUAL_I2C_PINS     /* Allow the usage of GPIO pins for I2C comms */
+
+#define DISABLE_BLE               /* Enable/Disable BLE compilation, to allow compilation in boards without BLE (Mega, ...) for testing */
 
 #define BLE_DEV_NAME              "CiafePwr"
 #define BLE_PUBLISH_POWER_RATE    (1000u * 1u)

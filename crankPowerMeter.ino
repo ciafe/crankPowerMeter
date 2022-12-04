@@ -49,12 +49,14 @@ void setup()
 
   /* Setup sensors */
   if (!imu_Setup()){
+#if defined(DEBUG_PRINT_SPEED) || defined(DEBUG_PRINT_FORCE) || defined(DEBUG_PRINT_REV)
     Serial.print(F("Imu device not found... check wiring."));
+#endif
   }
   load_Setup();
   ble_Setup();
 
-#ifdef DEBUG
+#if defined(DEBUG_PRINT_SPEED) || defined(DEBUG_PRINT_FORCE) || defined(DEBUG_PRINT_REV)
   Serial.println(F("All setup complete."));
 #endif
 }
