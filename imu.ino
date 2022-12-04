@@ -2,12 +2,15 @@
  * MPU6050 specific code. Initialize, helpers to do angular math.
  *
  */
-
-#define CALIBRATION_SAMPLES 40
-
-#define GYRO_INT_PIN A4
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+#include <Wire.h>
 
 Adafruit_MPU6050 mpu_sensor;
+
+#ifdef USE_MANUAL_I2C_PINS
+TwoWire I2Cmpu = TwoWire(0);
+#endif
 
 sensors_event_t last_acc, last_g, last_temp;
 
@@ -16,14 +19,23 @@ sensors_event_t last_acc, last_g, last_temp;
  */
 bool imu_Setup(void)
 {
+#ifdef ESP32_BOARD_I2C
+  I2Cmpu.begin(_IMU_I2C_SDA, IMU_I2C_SCL, 100000);
+#endif
+
+  // Try to initialize!
+#ifdef ESP32_BOARD_I2C
+  if (!mpu_sensor.begin(MPU6050_I2CADDR_DEFAULT, &I2Cmpu, 0))
+#else
   if (!mpu_sensor.begin()) 
+#endif
   {
-    return(false);
+    return(false); //TODO: if init fails, block next API and report always 0
   }
   else
   {
     /* Configure sensor */
-    mpu_sensor.setGyroRange(MPU6050_RANGE_1000_DEG); //Why not MPU6050_RANGE_500_DEG?
+    mpu_sensor.setGyroRange(MPU6050_RANGE_1000_DEG); //check improvement to change MPU6050_RANGE_500_DEG
     mpu_sensor.setFilterBandwidth(MPU6050_BAND_44_HZ); // test even with lowe filters, low speed Gyro application
     mpu_sensor.setAccelerometerRange(MPU6050_RANGE_2_G);
 	
@@ -137,7 +149,7 @@ void imu_calibrate_reading(void)
   int16_t maxSample = -32768;
   int16_t minSample = 32767;
   // Read n-samples
-  for (uint8_t i = 0; i < CALIBRATION_SAMPLES; ++i) {
+  for (uint8_t i = 0; i < IMU_CALIBRATION_SAMPLES; ++i) {
     delay(5);
     int16_t reading = gyro.getRotationZ();
     if (reading > maxSample) maxSample = reading;

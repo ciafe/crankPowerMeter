@@ -21,7 +21,7 @@ void ble_setupLogger(void);
 /*
  * Publish the instantaneous power measurement.
  */
-void ble_PublishPower(int16_t instantPwr, uint16_t crankRevs, long millisLast);
+void ble_PublishPower(int16_t instantPwr, uint16_t cadence, uint32_t crankRevs, long millisLast);
 /*
  * Publish the battery status measurement.
  */
