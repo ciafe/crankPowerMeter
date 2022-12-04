@@ -2,9 +2,6 @@
 #ifndef GYRO_API
 #define GYRO_API
 
-#include <Wire.h>
-#include <Adafruit_MPU6050.h>
-
 bool imu_Setup(void);
 
 void imu_readData(void);

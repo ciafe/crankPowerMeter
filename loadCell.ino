@@ -24,11 +24,11 @@ double load_getAvgForce(const double & lastAvg, const double filter) {
 
   currentData = loadsensor.get_units() * HOOKEDUPLOADBACKWARDS;
 
-  /* If measured data is out of range (measurement error???) just discard and return previous value */
-  if ((currentData > HX711_FORCE_LIMIT_RANGE) || (currentData < (-1 * HX711_FORCE_LIMIT_RANGE)))
+  /* If measured data is out of range just discard and return previous value (sporadically, raw value 0 is read) */
+  /*if ((currentData > HX711_FORCE_LIMIT_RANGE) || (currentData < (-1 * HX711_FORCE_LIMIT_RANGE)))
   {
     currentData = lastAvg;
-  }
+  }*/
 
   // Return a rolling average, including the last avg readings.
   // e.g. if weight is 0.90, it's 10% what it used to be, 90% this new reading.

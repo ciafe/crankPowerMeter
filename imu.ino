@@ -2,6 +2,9 @@
  * MPU6050 specific code. Initialize, helpers to do angular math.
  *
  */
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+#include <Wire.h>
 
 Adafruit_MPU6050 mpu_sensor;
 
@@ -27,7 +30,7 @@ bool imu_Setup(void)
   if (!mpu_sensor.begin()) 
 #endif
   {
-    return(false);
+    return(false); //TODO: if init fails, block next API and report always 0
   }
   else
   {

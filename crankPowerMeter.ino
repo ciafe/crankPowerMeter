@@ -84,11 +84,15 @@ void get_sensor_data(void)
     dps        = imu_getNormalAvgVelocity(dps, SENSOR_SPEED_FILTERING);
     /* Convert sensor data to degree/sec */
     angSpeed   = imu_getCrankCircularVelocity(dps);
-    /* Convert sensor data to rpm/sec */
+    /* Convert sensor data to rpm */
     cadence    = imu_getCrankCadence(dps);
     /* Convert sensor data to crank position angle */
     crankAngle = imu_getCrankAngle();
 
+    #ifdef DEBUG_PRINT_SPEED
+    Serial.print("S: ");Serial.println(cadence, 3);
+    #endif
+    
     lastUpdateSensor = timeNowSensor;
   }
 }
@@ -118,7 +122,10 @@ void calculate_power(void)
     }
     /* Average force */
     avgForce += force;
-    //Serial.println(force, 3);
+    
+    #ifdef DEBUG_PRINT_FORCE
+    Serial.print("F: ");Serial.println(force, 3);
+    #endif
     
     /* Get elapsed degrees with current speed and elapsed time */
     revElapsedDegrees += getDegreesFromSpeed(dps, timeSinceLastUpdate);
@@ -144,10 +151,12 @@ void calculate_power(void)
       /* Power filtering */
       avgPower = rollAvgPower(revPower, POWER_FILTERING);
 
-      //Serial.print("Revolution Done ->");
-      //Serial.print(" Cadence: ");Serial.print(avgCadence);
-      //Serial.print(" Force: ");Serial.print(avgForce);
-      //Serial.print(" Rev: ");Serial.println(totalCrankRevs);
+      #ifdef DEBUG_PRINT_REV
+      Serial.print("Revolution Done ->");
+      Serial.print(" RPM: ");Serial.print(avgCadence);
+      Serial.print(" W: ");Serial.print(revPower);
+      Serial.print(" Rev: ");Serial.println(totalCrankRevs);
+      #endif
       
       /* Reset averages from this polling period just carry over. */
       numPolls = 0;
