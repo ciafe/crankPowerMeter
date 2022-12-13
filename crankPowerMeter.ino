@@ -42,6 +42,8 @@ static long lastUpdateBlePower = 0u;
 static long lastUpdateBleBatt = 0u;
 static long lastUpdateCadence = 0u;
 
+static boolean logging_ready = false;
+
 /******* Setup *************************************/
 void setup() 
 {
@@ -55,10 +57,17 @@ void setup()
   }
   load_Setup();
   ble_Setup();
+#ifdef SD_LOGGING
+  if (Logging_Init_SD())
+  {
+    logging_ready = Logging_CreateNewLoggingFile();
+  }
+#endif
 
 #if defined(DEBUG_PRINT_SPEED) || defined(DEBUG_PRINT_FORCE) || defined(DEBUG_PRINT_REV)
   Serial.println(F("All setup complete."));
 #endif
+
 }
 
 void loop()
@@ -114,7 +123,15 @@ void calculate_power(void)
     /* Average speed */
     avgDps += dps;
     /* Now get force from the load cell */
-    force = load_getAvgForce(force, SENSOR_FORCE_FILTERING); //need to make abs()??? or simple remove negative?
+    force = load_getAvgForce(force, SENSOR_FORCE_FILTERING);
+    
+#if defined(POWER_DISCARD_NEG_FORCES)
+  /* If measured force is negative, just discard it and report back 0 Newtons */
+  if (force < 0)
+  {
+    force = 0;
+  }
+#endif
     /* Calculate and store the max and min. */
     if (force > maxForce) {
       maxForce = force;
@@ -156,6 +173,8 @@ void calculate_power(void)
       #ifdef DEBUG_PRINT_REV
       Serial.print("Revolution Done ->");
       Serial.print(" RPM: ");Serial.print(avgCadence);
+      Serial.print(" Speed: ");Serial.print(speedMps);
+      Serial.print(" Force: ");Serial.print(avgForce);
       Serial.print(" W: ");Serial.print(revPower);
       Serial.print(" Rev: ");Serial.println(totalCrankRevs);
       #endif
@@ -184,7 +203,20 @@ void calculate_power(void)
         /* Set to zero rev degrees, let's start from 0 again */
         revElapsedDegrees = 0;
       }
+      
     }
+    #ifdef SD_LOGGING
+    if (logging_ready)
+    {
+      Logging_StoreMeasurementData();
+      if (totalCrankRevs >= SD_LOGGING_NUM_REVOLUTIONS_TO_STORE)
+      {
+        Logging_CloseSDFile();
+        logging_ready = false;
+      }
+    }
+    #endif
+    
     lastUpdatePowerCalc = timeNowPowerCalc;
   }
 }
@@ -201,7 +233,7 @@ void publish_ble_data(void)
     /* Wait for publish Power Rate */
     if (timeSinceLastUpdate > BLE_PUBLISH_POWER_RATE)
     {
-      ble_PublishPower(avgPower, (uint16_t)avgCadence, totalCrankRevs, timeNowBle);
+      ble_PublishPower((int16_t)avgPower, (uint16_t)avgCadence, totalCrankRevs, timeNowBle);
       lastUpdateBlePower = timeNowBle;
 
       //just for debug, to delete
@@ -267,8 +299,8 @@ int16_t rollAvgPower(int16_t current, float weight) {
  * Returns the power, in watts. Force and distance over time.
  */
 int16_t calcPower(double footSpeed, double force) {
-  // Multiply it all by 2, because we only have the sensor on 1/2 the cranks.
-  return (2 * force * footSpeed);
+  /* Multiply it all by 2, because we only have the sensor on 1/2 the cranks. */
+  return ((int16_t)(2 * force * footSpeed));
 }
 
 /**

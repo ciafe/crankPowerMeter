@@ -104,7 +104,7 @@ void ble_PublishPower(int16_t instantPwr, uint16_t cadence, uint32_t crankRevs, 
   //Serial.println("BLE DUMMY PUBLISH POWER");
 #ifndef DISABLE_BLE
   speedOut = (uint16_t)crankRevs;
-  powerIn = crankRevs; //instantPwr;
+  powerIn = instantPwr;
   cadenceIn = cadence;
   
 
