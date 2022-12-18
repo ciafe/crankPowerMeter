@@ -9,7 +9,7 @@
 
 /******* Local function ******************************/
 uint8_t checkBatt();
-int16_t calcPower(double footSpeed, double force);
+double calcPower(double footSpeed, double force);
 void resetRevolutionAveragingData(void);
 void resetMeterData(void);
 
@@ -27,13 +27,13 @@ static uint32_t totalCrankRevs = 0;
 static double force = 0.f;
 static double avgForce = 0.f;
 static double avgCadence = 0.f;
-static int16_t avgPower = 0;
+static double avgPower = 0;
 static const float MIN_DOUBLE = -100000.f;
 static const float MAX_DOUBLE = 100000.f;
 static double maxForce = MIN_DOUBLE;
 static double minForce = MAX_DOUBLE;
 static int32_t numPolls = 0;
-static int16_t revPower = 0;
+static double revPower = 0;
 
 /* Time data variables */
 static long lastUpdateSensor = 0u;
@@ -203,7 +203,6 @@ void calculate_power(void)
         /* Set to zero rev degrees, let's start from 0 again */
         revElapsedDegrees = 0;
       }
-      
     }
     #ifdef SD_LOGGING
     if (logging_ready)
@@ -285,9 +284,9 @@ float getDegreesFromSpeed(float speedDegps, long elapsedTime)
  * Weight is the weight given to the current, previous will
  * have 1.0-weight weight.
  */
-int16_t rollAvgPower(int16_t current, float weight) {
-  static int16_t prevAvg = 0;  // Initially none
-  int16_t rollingAvg = (weight * current) + ((1.0 - weight) * prevAvg);
+double rollAvgPower(double current, float weight) {
+  static double prevAvg = 0;  // Initially none
+  double rollingAvg = (weight * current) + ((1.0 - weight) * prevAvg);
   prevAvg = rollingAvg;
   return rollingAvg;
 }
@@ -298,9 +297,9 @@ int16_t rollAvgPower(int16_t current, float weight) {
  *
  * Returns the power, in watts. Force and distance over time.
  */
-int16_t calcPower(double footSpeed, double force) {
+double calcPower(double footSpeed, double force) {
   /* Multiply it all by 2, because we only have the sensor on 1/2 the cranks. */
-  return ((int16_t)(2 * force * footSpeed));
+  return (2 * force * footSpeed * POWER_CALIBRATION);
 }
 
 /**

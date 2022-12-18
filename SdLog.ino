@@ -127,11 +127,11 @@ void Logging_StoreMeasurementData(void)
       sd_file.print(";");
       sd_file.print(force);
       sd_file.print(";");
-      sd_file.print(revPower);
+      sd_file.print(revPower, 2);
       sd_file.print(";");
       sd_file.print(avgCadence, 3);
       sd_file.print(";");
-      sd_file.print(avgPower);
+      sd_file.print(avgPower, 2);
       sd_file.print(";");
       sd_file.print(totalCrankRevs);
       sd_file.println(";");
