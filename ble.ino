@@ -16,6 +16,8 @@ const int16_t minPowInc = 1;
 const int16_t maxResLev = 40;// resistance level range settings, no app cares about this
 uint16_t speedOut = 100;
 int16_t powerOut = 100;
+int16_t powerOut_filter[BLE_POWER_FILTER_SAMPLES];
+int16_t powerOut_filter_pos = 0;
 
 #define fitnessMachineService BLEUUID((uint16_t)0x1826) // fitness machine service uuid, as defined in gatt specifications
 
@@ -69,6 +71,12 @@ void ble_Setup(void) {
     InitBLEServer();
     #endif
 
+    for(uint8_t iloop = 0; iloop < BLE_POWER_FILTER_SAMPLES; iloop++)
+    {
+      powerOut_filter[iloop] = 0;
+    }
+    powerOut_filter_pos = 0;
+
 }
 
 
@@ -101,10 +109,17 @@ boolean ble_isConnected(void)
  * Publish the instantaneous power measurement.
  */
 void ble_PublishPower(int16_t instantPwr, uint16_t cadence, uint32_t crankRevs, long millisLast) {
-  //Serial.println("BLE DUMMY PUBLISH POWER");
 #ifndef DISABLE_BLE
   speedOut = (uint16_t)crankRevs;
-  powerIn = instantPwr;
+  /* Perform average according config */
+  powerOut_filter[powerOut_filter_pos] = instantPwr;
+  powerOut_filter_pos = (powerOut_filter_pos + 1) % BLE_POWER_FILTER_SAMPLES;
+  powerIn = 0;
+  for(uint8_t iloop = 0; iloop < BLE_POWER_FILTER_SAMPLES; iloop++)
+  {
+    powerIn += powerOut_filter[iloop];
+  }
+  powerIn = powerIn/BLE_POWER_FILTER_SAMPLES;
   cadenceIn = cadence;
   
 

@@ -18,6 +18,7 @@
 #define BLE_DEV_NAME              "CiafePwr"
 #define BLE_PUBLISH_POWER_RATE    (1000u * 1u)
 #define BLE_PUBLISH_BATTERY_RATE  (1000u * 60u * 5u) /* 1000 ms / sec * 60 sec / min * 5 = 5 minutes */
+#define BLE_POWER_FILTER_SAMPLES  5                  /* Avegaraging filter applied to BLE published power, number of published samples averaged */
 
 #define SENSOR_READ_RATE          (20u)
 #define SENSOR_SPEED_FILTERING    0.6
